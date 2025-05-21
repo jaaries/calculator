@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Decimal Inputs - Readings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f9fc;
+      margin: 20px;
+      padding: 0;
+    }
+
+    h2, h3 {
+      color: #333;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    form {
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #888;
+    }
+
+    .info {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .box {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-left: 5px solid #007bff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 5px;
+    }
+
+    #differenceList {
+      border-left-color: #28a745;
+    }
+
+    #currentList {
+      border-left-color: #ffc107;
+    }
+
+    #previousList {
+      border-left-color: #17a2b8;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Totalizer</h2>
+    <p class="info" id="categoryLabel">Category: <span style="color: #17a2b8;">Previous</span></p>
+    <p class="info" id="batchLabel">Current Batch: Ex97</p>
+
+    <form id="decimalForm">
+      <label for="num1">Number 1:</label>
+      <input type="number" id="num1" step="any" required>
+
+      <label for="num2">Number 2:</label>
+      <input type="number" id="num2" step="any" required>
+
+      <label for="num3">Number 3:</label>
+      <input type="number" id="num3" step="any" required>
+
+      <label for="num4">Number 4:</label>
+      <input type="number" id="num4" step="any" required>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <div class="box" id="previousBox">
+      <h3>Previous Readings:</h3>
+      <ul id="previousList"></ul>
+    </div>
+
+    <div class="box" id="currentBox">
+      <h3>Current Readings:</h3>
+      <ul id="currentList"></ul>
+    </div>
+
+    <div class="box" id="differenceBox">
+      <h3>Differences (Current - Previous):</h3>
+      <ul id="differenceList"></ul>
+    </div>
+  </div>
+
+<script>
+  const form = document.getElementById("decimalForm");
+  const batchLabel = document.getElementById("batchLabel");
+  const categoryLabel = document.getElementById("categoryLabel");
+  const previousList = document.getElementById("previousList");
+  const currentList = document.getElementById("currentList");
+  const differenceList = document.getElementById("differenceList");
+
+  const batchNames = ["Ex97", "Ex91", "DSL"];
+  const previousReadings = [];
+  const currentReadings = [];
+
+  let currentCategory = "Previous";
+  let batchIndex = 0;
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const inputs = [
+      parseFloat(document.getElementById("num1").value),
+      parseFloat(document.getElementById("num2").value),
+      parseFloat(document.getElementById("num3").value),
+      parseFloat(document.getElementById("num4").value)
+    ];
+
+    const currentBatchName = batchNames[batchIndex];
+    const listItem = document.createElement("li");
+    listItem.textContent = `${currentBatchName}: ${inputs.join(", ")}`;
+
+    if (currentCategory === "Previous") {
+      previousReadings.push({ name: currentBatchName, values: inputs });
+      previousList.appendChild(listItem);
+    } else {
+      currentReadings.push({ name: currentBatchName, values: inputs });
+      currentList.appendChild(listItem);
+    }
+
+    form.reset();
+    batchIndex++;
+
+    if (batchIndex < batchNames.length) {
+      batchLabel.textContent = `Current Batch: ${batchNames[batchIndex]}`;
+    } else if (currentCategory === "Previous") {
+      currentCategory = "Current";
+      batchIndex = 0;
+      categoryLabel.innerHTML = `Category: <span style="color: #ffc107;">Current</span>`;
+      batchLabel.textContent = `Current Batch: ${batchNames[batchIndex]}`;
+    } else {
+      batchLabel.textContent = "All batches submitted.";
+      form.querySelector("button").disabled = true;
+      showDifferences();
+    }
+  });
+
+  function showDifferences() {
+    differenceList.innerHTML = "";
+    for (let i = 0; i < batchNames.length; i++) {
+      const prev = previousReadings[i].values;
+      const curr = currentReadings[i].values;
+      const diff = curr.map((value, index) => (value - prev[index]));
+
+      const roundedDiff = diff.map(val => val.toFixed(2));
+      const total = diff.reduce((sum, val) => sum + val, 0).toFixed(2);
+
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${batchNames[i]}</strong>: ${roundedDiff.join(", ")} <br><em>Total Difference:</em> ${total}`;
+      differenceList.appendChild(li);
+    }
+  }
+</script>
+</body>
+</html>
