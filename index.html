@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Batch Input Tracker</title>
+  <title>Reading Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,7 +12,7 @@
       background: #f8f9fa;
     }
     .container {
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       background: #fff;
       padding: 25px;
@@ -46,11 +47,20 @@
     .section {
       margin-top: 20px;
     }
-    .result {
+    .result, table {
       background: #e9ecef;
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
     }
     .label-group {
       text-align: center;
@@ -89,10 +99,12 @@
         <label>Ex91: <input type="number" step="0.0001" id="priceEx91" required></label><br>
         <label>DSL: <input type="number" step="0.0001" id="priceDSL" required></label><br><br>
         <button type="submit">Calculate</button>
+        <button type="button" id="resetBtn">Reset</button>
       </form>
     </div>
 
     <div class="section" id="resultSection"></div>
+    <canvas id="chartCanvas" width="400" height="200"></canvas>
   </div>
 
   <script>
@@ -102,6 +114,9 @@
     const priceForm = document.getElementById("priceForm");
     const resultSection = document.getElementById("resultSection");
     const priceSection = document.getElementById("priceSection");
+    const resetBtn = document.getElementById("resetBtn");
+    const ctx = document.getElementById('chartCanvas').getContext('2d');
+    let chart;
 
     let data = {
       Previous: {
@@ -184,9 +199,13 @@
         DSL: parseFloat(document.getElementById("priceDSL").value),
       };
 
-      resultSection.innerHTML = "<h2>Results</h2>";
+      resultSection.innerHTML = "<h2>Summary Table</h2>";
+      resultSection.innerHTML += `<table>
+        <tr><th>Batch</th><th>Differences</th><th>Total</th><th>Price</th><th>Cost</th></tr>`;
 
       let totalAmount = 0;
+      let chartLabels = [];
+      let chartData = [];
 
       batchNames.forEach(batch => {
         const prev = data.Previous[batch];
@@ -195,18 +214,34 @@
         const total = diff.reduce((sum, val) => sum + val, 0);
         const cost = total * prices[batch];
         totalAmount += cost;
+        chartLabels.push(batch);
+        chartData.push(cost);
 
         resultSection.innerHTML += `
-          <div class="result">
-            <strong>${batch}</strong><br>
-            Difference: ${diff.map(d => d.toFixed(4)).join(", ")}<br>
-            Total: ${total.toFixed(4)}<br>
-            Cost: ₱${cost.toFixed(4)}
-          </div>
-        `;
+          <tr><td>${batch}</td><td>${diff.map(d => d.toFixed(4)).join(", ")}</td><td>${total.toFixed(4)}</td><td>₱${prices[batch].toFixed(4)}</td><td>₱${cost.toFixed(4)}</td></tr>`;
+        
       });
 
-      resultSection.innerHTML += `<h3>Grand Total: ₱${totalAmount.toFixed(4)}</h3>`;
+      resultSection.innerHTML += `</table><h3>Grand Total: ₱${totalAmount.toFixed(4)}</h3>`;
+
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'Cost per Batch',
+            data: chartData,
+            backgroundColor: ['#007bff', '#28a745', '#ffc107']
+          }]
+        }
+      });
+    });
+
+    resetBtn.addEventListener("click", () => {
+      if (confirm("Are you sure you want to reset all data?")) {
+        location.reload();
+      }
     });
 
     updateLabels();
