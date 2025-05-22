@@ -2,249 +2,242 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reading Tracker</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batch Input Tracker</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f8f9fa;
+      margin: 20px;
+      background: #f4f4f4;
+    }
+    h2 {
+      margin-top: 30px;
     }
     .container {
-      max-width: 700px;
-      margin: auto;
       background: #fff;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: auto;
     }
-    h1, h2 {
-      text-align: center;
+    .form-group {
+      margin-bottom: 15px;
     }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    label {
+      display: block;
+      font-weight: bold;
     }
-    input {
+    input[type="number"] {
+      width: 100%;
       padding: 8px;
-      font-size: 1em;
+      box-sizing: border-box;
     }
-    button {
-      padding: 10px;
-      font-size: 1em;
-      cursor: pointer;
-    }
-    .navigation {
+    .navigation-buttons, .action-buttons {
       display: flex;
       justify-content: space-between;
-      margin-top: 10px;
-    }
-    .hidden {
-      display: none;
-    }
-    .section {
       margin-top: 20px;
-    }
-    .result, table {
-      background: #e9ecef;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 10px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 20px;
+      overflow-x: auto;
     }
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       padding: 8px;
       text-align: center;
     }
-    .label-group {
-      text-align: center;
-      margin-bottom: 10px;
+    th {
+      background-color: #f2f2f2;
     }
-    .label-group span {
-      font-weight: bold;
+    .responsive-table-wrapper {
+      overflow-x: auto;
+    }
+    canvas {
+      margin-top: 30px;
+    }
+    @media (max-width: 600px) {
+      label, input {
+        font-size: 14px;
+      }
+      th, td {
+        font-size: 12px;
+        padding: 6px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Reading Tracker</h1>
-
-    <div class="label-group">
-      <div>Category: <span id="categoryLabel">Previous</span></div>
-      <div>Batch: <span id="batchLabel">Ex97</span></div>
-    </div>
-
+    <h1>Batch Input Tracker</h1>
     <form id="batchForm">
-      <input type="number" step="0.0001" id="num1" placeholder="Pump 1" required>
-      <input type="number" step="0.0001" id="num2" placeholder="Pump 2" required>
-      <input type="number" step="0.0001" id="num3" placeholder="Pump 3" required>
-      <input type="number" step="0.0001" id="num4" placeholder="Pump 4" required>
+      <div id="stepContainer"></div>
+      <div class="navigation-buttons">
+        <button type="button" id="prevBtn">Previous</button>
+        <button type="button" id="nextBtn">Next</button>
+      </div>
     </form>
-
-    <div class="navigation">
-      <button id="prevBtn" disabled>Previous</button>
-      <button id="nextBtn">Next</button>
+    <div class="action-buttons">
+      <button id="calculateBtn">Calculate</button>
+      <button id="resetBtn">Reset</button>
     </div>
-
-    <div class="section hidden" id="priceSection">
-      <h2>Enter Price Per Unit</h2>
-      <form id="priceForm">
-        <label>Ex97: <input type="number" step="0.0001" id="priceEx97" required></label><br>
-        <label>Ex91: <input type="number" step="0.0001" id="priceEx91" required></label><br>
-        <label>DSL: <input type="number" step="0.0001" id="priceDSL" required></label><br><br>
-        <button type="submit">Calculate</button>
-        <button type="button" id="resetBtn">Reset</button>
-      </form>
-    </div>
-
-    <div class="section" id="resultSection"></div>
-    <canvas id="chartCanvas" width="400" height="200"></canvas>
+    <div id="summaryContainer"></div>
+    <canvas id="costChart"></canvas>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const batchNames = ["Ex97", "Ex91", "DSL"];
-    const categories = ["Previous", "Current"];
-    const form = document.getElementById("batchForm");
-    const priceForm = document.getElementById("priceForm");
-    const resultSection = document.getElementById("resultSection");
-    const priceSection = document.getElementById("priceSection");
-    const resetBtn = document.getElementById("resetBtn");
-    const ctx = document.getElementById('chartCanvas').getContext('2d');
-    let chart;
-
+    const batches = ["Ex97", "Ex91", "DSL"];
+    const categories = ["previous", "current"];
+    let step = 0;
     let data = {
-      Previous: {
-        Ex97: [null, null, null, null],
-        Ex91: [null, null, null, null],
-        DSL: [null, null, null, null],
-      },
-      Current: {
-        Ex97: [null, null, null, null],
-        Ex91: [null, null, null, null],
-        DSL: [null, null, null, null],
-      }
+      previous: {},
+      current: {},
+      prices: {}
     };
 
-    let categoryIndex = 0;
-    let batchIndex = 0;
-
-    const categoryLabel = document.getElementById("categoryLabel");
-    const batchLabel = document.getElementById("batchLabel");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-
-    function updateLabels() {
-      const currentCategory = categories[categoryIndex];
-      const currentBatch = batchNames[batchIndex];
-      categoryLabel.textContent = currentCategory;
-      batchLabel.textContent = currentBatch;
-
-      const values = data[currentCategory][currentBatch];
-      for (let i = 0; i < 4; i++) {
-        form.elements[i].value = values[i] ?? "";
-      }
-
-      prevBtn.disabled = categoryIndex === 0 && batchIndex === 0;
-      nextBtn.textContent = (categoryIndex === 1 && batchIndex === 2) ? "Submit" : "Next";
-    }
-
-    function saveCurrentInputs() {
-      const currentCategory = categories[categoryIndex];
-      const currentBatch = batchNames[batchIndex];
-      for (let i = 0; i < 4; i++) {
-        data[currentCategory][currentBatch][i] = parseFloat(form.elements[i].value) || 0;
-      }
-    }
-
-    prevBtn.addEventListener("click", () => {
-      saveCurrentInputs();
-      if (batchIndex > 0) {
-        batchIndex--;
-      } else if (categoryIndex > 0) {
-        categoryIndex--;
-        batchIndex = batchNames.length - 1;
-      }
-      updateLabels();
+    batches.forEach(batch => {
+      categories.forEach(cat => {
+        data[cat][batch] = ["", "", "", ""];
+      });
     });
 
-    nextBtn.addEventListener("click", () => {
-      saveCurrentInputs();
-      if (categoryIndex === 1 && batchIndex === 2) {
-        form.classList.add("hidden");
-        document.querySelector(".navigation").classList.add("hidden");
-        priceSection.classList.remove("hidden");
-      } else {
-        if (batchIndex < batchNames.length - 1) {
-          batchIndex++;
-        } else if (categoryIndex < categories.length - 1) {
-          categoryIndex++;
-          batchIndex = 0;
+    function renderStep() {
+      const container = document.getElementById("stepContainer");
+      container.innerHTML = "";
+
+      const categoryIndex = Math.floor(step / batches.length);
+      const batchIndex = step % batches.length;
+
+      if (step < 6) {
+        const category = categories[categoryIndex];
+        const batch = batches[batchIndex];
+
+        const heading = document.createElement("h2");
+        heading.textContent = `${category.toUpperCase()} - ${batch}`;
+        container.appendChild(heading);
+
+        for (let i = 0; i < 4; i++) {
+          const group = document.createElement("div");
+          group.className = "form-group";
+
+          const label = document.createElement("label");
+          label.textContent = `Input ${i + 1}`;
+
+          const input = document.createElement("input");
+          input.type = "number";
+          input.step = "0.0001";
+          input.value = data[category][batch][i];
+          input.oninput = (e) => data[category][batch][i] = e.target.value;
+
+          group.appendChild(label);
+          group.appendChild(input);
+          container.appendChild(group);
         }
-        updateLabels();
+      } else if (step < 9) {
+        const batch = batches[step - 6];
+        const heading = document.createElement("h2");
+        heading.textContent = `Enter Price per Unit for ${batch}`;
+        container.appendChild(heading);
+
+        const group = document.createElement("div");
+        group.className = "form-group";
+
+        const label = document.createElement("label");
+        label.textContent = `Price for ${batch}`;
+
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "0.0001";
+        input.value = data.prices[batch] || "";
+        input.oninput = (e) => data.prices[batch] = e.target.value;
+
+        group.appendChild(label);
+        group.appendChild(input);
+        container.appendChild(group);
+      } else {
+        container.innerHTML = "<p>All data entered. Click 'Calculate' to see the summary.</p>";
       }
-    });
+    }
 
-    priceForm.addEventListener("submit", (e) => {
-      e.preventDefault();
+    function calculateDifferences() {
+      const summary = document.getElementById("summaryContainer");
+      summary.innerHTML = "<h2>Summary Table</h2>";
+      const wrapper = document.createElement("div");
+      wrapper.className = "responsive-table-wrapper";
 
-      const prices = {
-        Ex97: parseFloat(document.getElementById("priceEx97").value),
-        Ex91: parseFloat(document.getElementById("priceEx91").value),
-        DSL: parseFloat(document.getElementById("priceDSL").value),
-      };
+      const table = document.createElement("table");
+      const header = `<tr><th>Batch</th><th>Difference 1</th><th>Difference 2</th><th>Difference 3</th><th>Difference 4</th><th>Total Used</th><th>Unit Price</th><th>Total Cost</th></tr>`;
+      table.innerHTML = header;
 
-      resultSection.innerHTML = "<h2>Summary Table</h2>";
-      resultSection.innerHTML += `<table>
-        <tr><th>Batch</th><th>Differences</th><th>Total</th><th>Price</th><th>Cost</th></tr>`;
+      const chartLabels = [];
+      const chartData = [];
 
-      let totalAmount = 0;
-      let chartLabels = [];
-      let chartData = [];
+      batches.forEach(batch => {
+        const prev = data.previous[batch].map(Number);
+        const curr = data.current[batch].map(Number);
+        const price = parseFloat(data.prices[batch]) || 0;
+        const diffs = curr.map((val, idx) => (val - prev[idx]).toFixed(4));
+        const total = diffs.reduce((sum, val) => sum + parseFloat(val), 0).toFixed(4);
+        const cost = (total * price).toFixed(4);
 
-      batchNames.forEach(batch => {
-        const prev = data.Previous[batch];
-        const curr = data.Current[batch];
-        const diff = curr.map((val, i) => val - prev[i]);
-        const total = diff.reduce((sum, val) => sum + val, 0);
-        const cost = total * prices[batch];
-        totalAmount += cost;
         chartLabels.push(batch);
         chartData.push(cost);
 
-        resultSection.innerHTML += `
-          <tr><td>${batch}</td><td>${diff.map(d => d.toFixed(4)).join(", ")}</td><td>${total.toFixed(4)}</td><td>₱${prices[batch].toFixed(4)}</td><td>₱${cost.toFixed(4)}</td></tr>`;
-        
+        const row = `<tr>
+          <td>${batch}</td>
+          ${diffs.map(d => `<td>${d}</td>`).join("")}
+          <td>${total}</td>
+          <td>${price.toFixed(4)}</td>
+          <td>${cost}</td>
+        </tr>`;
+        table.innerHTML += row;
       });
 
-      resultSection.innerHTML += `</table><h3>Grand Total: ₱${totalAmount.toFixed(4)}</h3>`;
+      wrapper.appendChild(table);
+      summary.appendChild(wrapper);
 
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
-        type: 'bar',
+      const ctx = document.getElementById("costChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
         data: {
           labels: chartLabels,
           datasets: [{
-            label: 'Cost per Batch',
+            label: "Total Cost per Batch",
             data: chartData,
-            backgroundColor: ['#007bff', '#28a745', '#ffc107']
+            backgroundColor: ["#4e73df", "#1cc88a", "#36b9cc"]
           }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
         }
       });
-    });
+    }
 
-    resetBtn.addEventListener("click", () => {
-      if (confirm("Are you sure you want to reset all data?")) {
-        location.reload();
-      }
-    });
+    document.getElementById("prevBtn").onclick = () => {
+      if (step > 0) step--;
+      renderStep();
+    };
 
-    updateLabels();
+    document.getElementById("nextBtn").onclick = () => {
+      if (step < 9) step++;
+      renderStep();
+    };
+
+    document.getElementById("calculateBtn").onclick = calculateDifferences;
+
+    document.getElementById("resetBtn").onclick = () => {
+      location.reload();
+    };
+
+    renderStep();
   </script>
 </body>
 </html>
