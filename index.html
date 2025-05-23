@@ -2,212 +2,249 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Batch Input Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Batch Reading Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f4f4f4;
+      margin: 1em;
+      background: #f5f5f5;
     }
+
     h2 {
-      margin-top: 30px;
+      margin-top: 1em;
     }
-    .container {
+
+    .section {
+      display: none;
       background: #fff;
-      padding: 20px;
+      padding: 1em;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 800px;
-      margin: auto;
+      margin-bottom: 1em;
     }
+
+    .section.active {
+      display: block;
+    }
+
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 1em;
     }
+
     label {
       display: block;
       font-weight: bold;
     }
-    input[type="number"] {
+
+    input {
       width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
+      padding: 0.4em;
+      margin-top: 0.3em;
+      font-size: 1em;
     }
-    .navigation-buttons, .action-buttons {
+
+    .nav-buttons, .actions {
       display: flex;
-      justify-content: space-between;
-      margin-top: 20px;
+      gap: 1em;
+      margin: 1em 0;
     }
+
+    .summary {
+      overflow-x: auto;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
-      overflow-x: auto;
+      margin-top: 1em;
     }
+
     th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+      border: 1px solid #ccc;
+      padding: 0.6em;
       text-align: center;
     }
+
     th {
-      background-color: #f2f2f2;
+      background-color: #eee;
     }
-    .responsive-table-wrapper {
-      overflow-x: auto;
-    }
-    canvas {
-      margin-top: 30px;
-    }
+
     @media (max-width: 600px) {
-      label, input {
-        font-size: 14px;
-      }
-      th, td {
-        font-size: 12px;
-        padding: 6px;
+      input {
+        font-size: 0.9em;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Batch Input Tracker</h1>
-    <form id="batchForm">
-      <div id="stepContainer"></div>
-      <div class="navigation-buttons">
-        <button type="button" id="prevBtn">Previous</button>
-        <button type="button" id="nextBtn">Next</button>
-      </div>
-    </form>
-    <div class="action-buttons">
-      <button id="calculateBtn">Calculate</button>
-      <button id="resetBtn">Reset</button>
-    </div>
-    <div id="summaryContainer"></div>
-    <canvas id="costChart"></canvas>
+
+  <h1>Fuel Reading Logger</h1>
+
+  <div class="nav-buttons">
+    <button onclick="showSection(0)">Previous - Ex97</button>
+    <button onclick="showSection(1)">Previous - Ex91</button>
+    <button onclick="showSection(2)">Previous - DSL</button>
+    <button onclick="showSection(3)">Current - Ex97</button>
+    <button onclick="showSection(4)">Current - Ex91</button>
+    <button onclick="showSection(5)">Current - DSL</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div id="sections">
+    <!-- Previous and Current inputs -->
+    <div class="section active" id="section0">
+      <h2>Previous: Ex97</h2>
+      <div class="form-group">
+        <label>Enter 4 values</label>
+        <input type="number" step="0.0001" id="prev_ex97_1" />
+        <input type="number" step="0.0001" id="prev_ex97_2" />
+        <input type="number" step="0.0001" id="prev_ex97_3" />
+        <input type="number" step="0.0001" id="prev_ex97_4" />
+      </div>
+    </div>
+
+    <div class="section" id="section1">
+      <h2>Previous: Ex91</h2>
+      <div class="form-group">
+        <label>Enter 4 values</label>
+        <input type="number" step="0.0001" id="prev_ex91_1" />
+        <input type="number" step="0.0001" id="prev_ex91_2" />
+        <input type="number" step="0.0001" id="prev_ex91_3" />
+        <input type="number" step="0.0001" id="prev_ex91_4" />
+      </div>
+    </div>
+
+    <div class="section" id="section2">
+      <h2>Previous: DSL</h2>
+      <div class="form-group">
+        <label>Enter 4 values</label>
+        <input type="number" step="0.0001" id="prev_dsl_1" />
+        <input type="number" step="0.0001" id="prev_dsl_2" />
+        <input type="number" step="0.0001" id="prev_dsl_3" />
+        <input type="number" step="0.0001" id="prev_dsl_4" />
+      </div>
+    </div>
+
+    <div class="section" id="section3">
+      <h2>Current: Ex97</h2>
+      <div class="form-group">
+        <label>Enter 4 values</label>
+        <input type="number" step="0.0001" id="curr_ex97_1" />
+        <input type="number" step="0.0001" id="curr_ex97_2" />
+        <input type="number" step="0.0001" id="curr_ex97_3" />
+        <input type="number" step="0.0001" id="curr_ex97_4" />
+        <label>Price per unit</label>
+        <input type="number" step="0.0001" id="price_ex97" />
+      </div>
+    </div>
+
+    <div class="section" id="section4">
+      <h2>Current: Ex91</h2>
+      <div class="form-group">
+        <label>Enter 4 values</label>
+        <input type="number" step="0.0001" id="curr_ex91_1" />
+        <input type="number" step="0.0001" id="curr_ex91_2" />
+        <input type="number" step="0.0001" id="curr_ex91_3" />
+        <input type="number" step="0.0001" id="curr_ex91_4" />
+        <label>Price per unit</label>
+        <input type="number" step="0.0001" id="price_ex91" />
+      </div>
+    </div>
+
+    <div class="section" id="section5">
+      <h2>Current: DSL</h2>
+      <div class="form-group">
+        <label>Enter 4 values</label>
+        <input type="number" step="0.0001" id="curr_dsl_1" />
+        <input type="number" step="0.0001" id="curr_dsl_2" />
+        <input type="number" step="0.0001" id="curr_dsl_3" />
+        <input type="number" step="0.0001" id="curr_dsl_4" />
+        <label>Price per unit</label>
+        <input type="number" step="0.0001" id="price_dsl" />
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button onclick="calculate()">Calculate & Show Summary</button>
+    <button id="resetBtn">Reset All</button>
+  </div>
+
+  <div class="summary" id="summary"></div>
+  <canvas id="chart" style="max-width:100%; height:300px;"></canvas>
+
   <script>
-    const batches = ["Ex97", "Ex91", "DSL"];
-    const categories = ["previous", "current"];
-    let step = 0;
-    let data = {
-      previous: {},
-      current: {},
-      prices: {}
-    };
+    const sectionEls = document.querySelectorAll(".section");
 
-    batches.forEach(batch => {
-      categories.forEach(cat => {
-        data[cat][batch] = ["", "", "", ""];
-      });
-    });
-
-    function renderStep() {
-      const container = document.getElementById("stepContainer");
-      container.innerHTML = "";
-
-      const categoryIndex = Math.floor(step / batches.length);
-      const batchIndex = step % batches.length;
-
-      if (step < 6) {
-        const category = categories[categoryIndex];
-        const batch = batches[batchIndex];
-
-        const heading = document.createElement("h2");
-        heading.textContent = `${category.toUpperCase()} - ${batch}`;
-        container.appendChild(heading);
-
-        for (let i = 0; i < 4; i++) {
-          const group = document.createElement("div");
-          group.className = "form-group";
-
-          const label = document.createElement("label");
-          label.textContent = `Input ${i + 1}`;
-
-          const input = document.createElement("input");
-          input.type = "number";
-          input.step = "0.0001";
-          input.value = data[category][batch][i];
-          input.oninput = (e) => data[category][batch][i] = e.target.value;
-
-          group.appendChild(label);
-          group.appendChild(input);
-          container.appendChild(group);
-        }
-      } else if (step < 9) {
-        const batch = batches[step - 6];
-        const heading = document.createElement("h2");
-        heading.textContent = `Enter Price per Unit for ${batch}`;
-        container.appendChild(heading);
-
-        const group = document.createElement("div");
-        group.className = "form-group";
-
-        const label = document.createElement("label");
-        label.textContent = `Price for ${batch}`;
-
-        const input = document.createElement("input");
-        input.type = "number";
-        input.step = "0.0001";
-        input.value = data.prices[batch] || "";
-        input.oninput = (e) => data.prices[batch] = e.target.value;
-
-        group.appendChild(label);
-        group.appendChild(input);
-        container.appendChild(group);
-      } else {
-        container.innerHTML = "<p>All data entered. Click 'Calculate' to see the summary.</p>";
-      }
+    function showSection(index) {
+      sectionEls.forEach((sec, i) => sec.classList.toggle("active", i === index));
     }
 
-    function calculateDifferences() {
-      const summary = document.getElementById("summaryContainer");
-      summary.innerHTML = "<h2>Summary Table</h2>";
-      const wrapper = document.createElement("div");
-      wrapper.className = "responsive-table-wrapper";
+    function saveInputs() {
+      const inputs = document.querySelectorAll("input");
+      inputs.forEach(input => {
+        localStorage.setItem(input.id, input.value);
+      });
+    }
 
-      const table = document.createElement("table");
-      const header = `<tr><th>Batch</th><th>Difference 1</th><th>Difference 2</th><th>Difference 3</th><th>Difference 4</th><th>Total Used</th><th>Unit Price</th><th>Total Cost</th></tr>`;
-      table.innerHTML = header;
+    function loadInputs() {
+      const inputs = document.querySelectorAll("input");
+      inputs.forEach(input => {
+        const saved = localStorage.getItem(input.id);
+        if (saved !== null) input.value = saved;
+        input.addEventListener("input", saveInputs);
+      });
+    }
 
-      const chartLabels = [];
-      const chartData = [];
+    function resetAll() {
+      localStorage.clear();
+      document.querySelectorAll("input").forEach(input => input.value = "");
+      document.getElementById("summary").innerHTML = "";
+      if (chartInstance) chartInstance.destroy();
+    }
+
+    function getValues(prefix) {
+      return [1, 2, 3, 4].map(i => parseFloat(document.getElementById(`${prefix}_${i}`).value) || 0);
+    }
+
+    function calculate() {
+      const batches = ["ex97", "ex91", "dsl"];
+      let table = `<table><thead><tr>
+        <th>Batch</th><th>Total Used</th><th>Price</th><th>Total Cost</th>
+      </tr></thead><tbody>`;
+      const chartLabels = [], chartData = [];
 
       batches.forEach(batch => {
-        const prev = data.previous[batch].map(Number);
-        const curr = data.current[batch].map(Number);
-        const price = parseFloat(data.prices[batch]) || 0;
-        const diffs = curr.map((val, idx) => (val - prev[idx]).toFixed(4));
-        const total = diffs.reduce((sum, val) => sum + parseFloat(val), 0).toFixed(4);
-        const cost = (total * price).toFixed(4);
+        const prev = getValues("prev_" + batch);
+        const curr = getValues("curr_" + batch);
+        const price = parseFloat(document.getElementById("price_" + batch).value) || 0;
 
-        chartLabels.push(batch);
-        chartData.push(cost);
+        const totalUsed = curr.reduce((sum, val, i) => sum + (val - prev[i]), 0);
+        const totalCost = totalUsed * price;
 
-        const row = `<tr>
-          <td>${batch}</td>
-          ${diffs.map(d => `<td>${d}</td>`).join("")}
-          <td>${total}</td>
+        table += `<tr>
+          <td>${batch.toUpperCase()}</td>
+          <td>${totalUsed.toFixed(4)}</td>
           <td>${price.toFixed(4)}</td>
-          <td>${cost}</td>
+          <td>${totalCost.toFixed(4)}</td>
         </tr>`;
-        table.innerHTML += row;
+
+        chartLabels.push(batch.toUpperCase());
+        chartData.push(totalCost);
       });
 
-      wrapper.appendChild(table);
-      summary.appendChild(wrapper);
+      table += "</tbody></table>";
+      document.getElementById("summary").innerHTML = table;
 
-      const ctx = document.getElementById("costChart").getContext("2d");
-      new Chart(ctx, {
-        type: "bar",
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(document.getElementById("chart"), {
+        type: 'bar',
         data: {
           labels: chartLabels,
           datasets: [{
-            label: "Total Cost per Batch",
+            label: 'Total Cost per Batch',
             data: chartData,
-            backgroundColor: ["#4e73df", "#1cc88a", "#36b9cc"]
+            backgroundColor: ['#3e95cd', '#8e5ea2', '#3cba9f']
           }]
         },
         options: {
@@ -221,23 +258,9 @@
       });
     }
 
-    document.getElementById("prevBtn").onclick = () => {
-      if (step > 0) step--;
-      renderStep();
-    };
-
-    document.getElementById("nextBtn").onclick = () => {
-      if (step < 9) step++;
-      renderStep();
-    };
-
-    document.getElementById("calculateBtn").onclick = calculateDifferences;
-
-    document.getElementById("resetBtn").onclick = () => {
-      location.reload();
-    };
-
-    renderStep();
+    let chartInstance = null;
+    document.getElementById("resetBtn").addEventListener("click", resetAll);
+    loadInputs();
   </script>
 </body>
 </html>
